@@ -54,7 +54,7 @@ class AppStore {
             localStorage.setItem('sprintpulse_data', JSON.stringify(this.state));
         } catch (e) {
             console.error('Save failed', e);
-            alert("Storage Error: Could not save data. LocalStorage might be full or disabled.");
+            this.showModal("Storage Error", "Could not save data. LocalStorage might be full or disabled.", null);
         }
     }
 
@@ -105,22 +105,7 @@ class AppStore {
         }
     }
 
-    removeGoal(goalId) {
-        if (confirm("Delete this goal?")) {
-            this.state.goals = this.state.goals.filter(g => g.id !== goalId);
-            this.save();
-            this.render();
-        }
-    }
 
-    editVision() {
-        const newVision = prompt("Update your 12-week Vision:", this.state.vision);
-        if (newVision) {
-            this.state.vision = newVision;
-            this.save();
-            this.render();
-        }
-    }
 
     // Tactics
     addTactic(goalId) {
@@ -478,6 +463,12 @@ class AppStore {
             container.appendChild(el);
         });
 
+        const addGoalWrapper = document.createElement('div');
+        addGoalWrapper.style.textAlign = 'center';
+        addGoalWrapper.style.marginTop = '24px';
+        addGoalWrapper.innerHTML = `<button class="btn btn-secondary" onclick="app.addGoal()">+ Add New Goal</button>`;
+        container.appendChild(addGoalWrapper);
+
         // Ensure icons are created immediately
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
@@ -503,85 +494,115 @@ class AppStore {
         this.renderPlan();
     }
 
-    addGoal() {
-        const title = prompt('Enter new goal title:');
-        if (title) {
-            const newGoal = { id: 'g' + Date.now(), title: title, tactics: [] };
-            this.state.goals.push(newGoal);
-            this.save();
-            this.render();
-        }
-    }
+
 
     removeGoal(id) {
-        if (confirm('Delete this goal and all its tactics?')) {
-            this.state.goals = this.state.goals.filter(g => g.id !== id);
-            this.save();
-            this.render();
-        }
+        this.showModal(
+            "Delete Goal?",
+            "Are you sure you want to delete this goal and all its tactics?",
+            () => {
+                this.state.goals = this.state.goals.filter(g => g.id !== id);
+                this.save();
+                this.render();
+            },
+            true,
+            "Delete"
+        );
     }
 
     addTactic(goalId, week, isRecurring, optionalTitle) {
         const goal = this.state.goals.find(g => g.id === goalId);
-        if (goal) {
-            let title = optionalTitle;
+        if (!goal) return;
 
-            if (isRecurring && !title) {
-                title = prompt('Enter Recurring Tactic (will create for Weeks 1-12):');
-            } else if (!isRecurring && !title && title !== "") {
-                // If no title passed (clicked button directly without input?), maybe prompt or just focus?
-                // For now if empty and not recurring, we might assume prompt if called from old button, 
-                // but we replaced the button. 
-                // If called empty, just return or prompt.
-                // Let's support prompt if title is null/undefined
-                title = prompt(`Enter Tactic for Week ${week}:`);
+        // 1. Direct Add (Inline Input)
+        if (optionalTitle) {
+            this._createTactic(goal, week, isRecurring, optionalTitle);
+            return;
+        }
+
+        // 2. Button Clicked (Recurring or Empty) -> Show Modal Input
+        if (isRecurring) {
+            const html = `
+                <p>Enter tactic to repeat across all 12 weeks:</p>
+                <input id="app-modal-input" type="text" class="seamless-input" 
+                       style="border:1px solid #e0e0e0; background:#f9f9f9; padding:12px; margin-top:12px; width:100%; border-radius:8px;"
+                       placeholder="e.g. Read 10 pages">
+            `;
+            this.showModal(
+                "Add Recurring Tactic",
+                html,
+                (val) => {
+                    if (val) this._createTactic(goal, week, true, val);
+                },
+                true,
+                "Add Tactic"
+            );
+            return;
+        }
+
+        // Legacy/Fallback for empty non-recurring calls
+        if (!optionalTitle && !isRecurring) {
+            const html = `
+                <p>Enter tactic for Week ${week}:</p>
+                <input id="app-modal-input" type="text" class="seamless-input" 
+                       style="border:1px solid #e0e0e0; background:#f9f9f9; padding:12px; margin-top:12px; width:100%; border-radius:8px;"
+                       placeholder="Enter tactic...">
+            `;
+            this.showModal(
+                "Add Tactic",
+                html,
+                (val) => {
+                    if (val) this._createTactic(goal, week, false, val);
+                },
+                true,
+                "Add Tactic"
+            );
+        }
+    }
+
+    _createTactic(goal, week, isRecurring, title) {
+        if (!title) return;
+
+        if (isRecurring) {
+            // Generator: Create 12 tactics
+            for (let w = 1; w <= 12; w++) {
+                goal.tactics.push({
+                    id: 't' + Date.now() + '_w' + w,
+                    title: title,
+                    completed: false,
+                    week: w
+                });
             }
+        } else {
+            goal.tactics.push({
+                id: 't' + Date.now(),
+                title: title,
+                completed: false,
+                week: week
+            });
+        }
 
-            if (title) {
-                if (isRecurring) {
-                    // Generator: Create 12 tactics
-                    for (let w = 1; w <= 12; w++) {
-                        goal.tactics.push({
-                            id: 't' + Date.now() + '_w' + w,
-                            title: title,
-                            completed: false,
-                            week: w
-                        });
-                    }
-                } else {
-                    goal.tactics.push({
-                        id: 't' + Date.now(),
-                        title: title,
-                        completed: false,
-                        week: week
-                    });
+        // AUTO-OPEN TARGET WEEK
+        if (week && !isRecurring) {
+            if (!this.state.openWeeks) this.state.openWeeks = {};
+            if (!this.state.openWeeks[goal.id]) this.state.openWeeks[goal.id] = {};
+
+            const wKey = String(week);
+            this.state.openWeeks[goal.id][wKey] = true;
+        }
+
+        this.save();
+        this.render();
+
+        // Focus strategy for inline inputs
+        if (!isRecurring) {
+            setTimeout(() => {
+                const params = document.getElementById(`new-tactic-${goal.id}-w${week}`);
+                if (params) {
+                    params.value = ''; // Clear the input
+                    params.focus();
                 }
-
-                // AUTO-OPEN TARGET WEEK
-                if (week && !isRecurring) {
-                    if (!this.state.openWeeks) this.state.openWeeks = {};
-                    if (!this.state.openWeeks[goalId]) this.state.openWeeks[goalId] = {};
-
-                    const wKey = String(week);
-                    this.state.openWeeks[goalId][wKey] = true;
-                    console.log(`Forced Open Goal ${goalId} Week ${wKey} (Set to true)`);
-                }
-
-                this.save();
-                this.render();
-
-                // Focus strategy: 
-                // We need to wait for DOM update.
-                setTimeout(() => {
-                    const params = document.getElementById(`new-tactic-${goalId}-w${week}`);
-                    if (params) {
-                        params.value = ''; // Clear the input
-                        params.focus();
-                    } else {
-                        console.error("Could not find input to focus:", `new-tactic-${goalId}-w${week}`);
-                    }
-                }, 50);
-            }
+            }, 50);
         }
     }
 
@@ -921,37 +942,47 @@ class AppStore {
     }
 
     completeWeek() {
-        if (!confirm(`Finish Week ${this.state.currentWeek}? This will lock current stats.`)) return;
+        this.showModal(
+            "Complete Week?",
+            `Finish Week ${this.state.currentWeek}? This will lock current stats for this week.`,
+            () => {
+                // 1. Archive Stats
+                const existingEntryIndex = this.state.metrics.wesHistory.findIndex(h => h.week === this.state.currentWeek);
 
-        // 1. Archive Stats
-        const existingEntryIndex = this.state.metrics.wesHistory.findIndex(h => h.week === this.state.currentWeek);
+                const entry = {
+                    week: this.state.currentWeek,
+                    score: this.calculateWES(),
+                    strategicHours: this.calculateStrategicHours(),
+                    lag: this.state.metrics[`week${this.state.currentWeek}_lag`],
+                    lead: this.state.metrics[`week${this.state.currentWeek}_lead`]
+                };
 
-        const entry = {
-            week: this.state.currentWeek,
-            score: this.calculateWES(),
-            strategicHours: this.calculateStrategicHours(), // New Stat
-            lag: this.state.metrics[`week${this.state.currentWeek}_lag`],
-            lead: this.state.metrics[`week${this.state.currentWeek}_lead`]
-        };
+                if (existingEntryIndex >= 0) {
+                    this.state.metrics.wesHistory[existingEntryIndex] = entry;
+                } else {
+                    this.state.metrics.wesHistory.push(entry);
+                }
 
-        if (existingEntryIndex >= 0) {
-            this.state.metrics.wesHistory[existingEntryIndex] = entry;
-        } else {
-            this.state.metrics.wesHistory.push(entry);
-        }
+                this.save();
 
-        // 2. Increment Week
-        if (this.state.currentWeek < 12) {
-            this.state.currentWeek++;
-            // Generator Strategy: We do not reset tactics. Week 2 tactics are already waiting separate from Week 1.
-            alert("Welcome to Week " + this.state.currentWeek);
-        } else {
-            alert("🎉 CONGRATULATIONS! You completed the 12 Week Year!");
-            this.state.currentWeek = 13;
-        }
-
-        this.save();
-        this.render();
+                // 2. Increment Week
+                if (this.state.currentWeek < 12) {
+                    this.state.currentWeek++;
+                    this.render();
+                    setTimeout(() => {
+                        this.showModal("Level Up", "Welcome to Week " + this.state.currentWeek, null);
+                    }, 300);
+                } else {
+                    this.state.currentWeek = 13;
+                    this.render();
+                    setTimeout(() => {
+                        this.showModal("Sprint Complete", "🎉 CONGRATULATIONS! You completed the 12 Week Year!", null);
+                    }, 300);
+                }
+            },
+            true,
+            "Complete"
+        );
     }
 
     // Renamed from renderResources
@@ -1016,12 +1047,18 @@ class AppStore {
     }
 
     resetData() {
-        if (confirm("DANGER: This will delete ALL your goals, vision, and history. Are you sure you want to start fresh?")) {
-            // key correction: prevent auto-save from writing old data back during reload
-            this.save = () => { };
-            localStorage.removeItem('sprintpulse_data');
-            location.reload();
-        }
+        this.showModal(
+            "Start Over?",
+            "DANGER: This will delete ALL your goals, vision, and history.<br><br>Are you sure?",
+            () => {
+                // key correction: prevent auto-save from writing old data back during reload
+                this.save = () => { };
+                localStorage.removeItem('sprintpulse_data');
+                location.reload();
+            },
+            true,
+            "Reset Everything"
+        );
     }
 
     switchTab(tabId) {
@@ -1040,6 +1077,49 @@ class AppStore {
         btns.forEach(b => {
             if (b.onclick.toString().includes(tabId)) b.classList.add('active');
         });
+    }
+    showModal(title, htmlContent, onConfirm, showCancel = false, confirmText = "OK") {
+        const modal = document.getElementById('app-modal');
+        if (!modal) return;
+
+        document.getElementById('app-modal-title').textContent = title;
+        document.getElementById('app-modal-body').innerHTML = htmlContent;
+
+        const btnConfirm = document.getElementById('app-modal-confirm');
+        const btnCancel = document.getElementById('app-modal-cancel');
+
+        btnConfirm.textContent = confirmText;
+
+        // Clone to clear listeners
+        const newConfirm = btnConfirm.cloneNode(true);
+        const newCancel = btnCancel.cloneNode(true);
+        btnConfirm.parentNode.replaceChild(newConfirm, btnConfirm);
+        btnCancel.parentNode.replaceChild(newCancel, btnCancel);
+
+        newConfirm.onclick = () => {
+            // If there is an input in the modal, we might want to validate it? 
+            // For now, simpler is better.
+            const input = document.getElementById('app-modal-input');
+            const value = input ? input.value : true;
+
+            modal.classList.remove('open');
+            if (onConfirm) onConfirm(value);
+        };
+
+        if (showCancel) {
+            newCancel.style.display = 'inline-block';
+            newCancel.onclick = () => {
+                modal.classList.remove('open');
+            };
+        } else {
+            newCancel.style.display = 'none';
+        }
+
+        modal.classList.add('open');
+
+        // Auto focus input if present
+        const input = document.getElementById('app-modal-input');
+        if (input) setTimeout(() => input.focus(), 50);
     }
 }
 
