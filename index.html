@@ -1,0 +1,1941 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="color-scheme" content="light only">
+    <meta name="description" content="SprintPulse - High performance 12-week execution planner">
+    <title>SprintPulse | The 12 Week Year</title>
+
+    <!-- Google Fonts: Inter & JetBrains Mono (for data) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <!-- Icons: Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* --- DESIGN TOKENS --- */
+        :root {
+            /* Pulse.red Palette */
+            --primary-red: #D0021B;
+            --primary-blue: #0078FF;
+            --text-main: #111111;
+            --text-secondary: #555555;
+            --text-tertiary: #999999;
+            --bg-body: #ffffff;
+            --bg-card: #ffffff;
+
+            /* Legacy Mappings to keep app working */
+            --accent-orange: var(--primary-red);
+            --surface-card: var(--bg-card);
+            --surface-hover: #f5f5f5;
+            --text-primary: var(--text-main);
+
+            /* Dimensions */
+            --container-width: 960px;
+            --radius-pill: 50px;
+            --radius-card: 16px;
+            --nav-height: 80px;
+
+            /* Typography */
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        /* --- BASE --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        input.seamless-input {
+            border: 1px solid transparent;
+            background: transparent;
+            padding: 4px;
+            /* Reduced padding for seamless feel */
+            width: 100%;
+            font-size: inherit;
+            /* Inherit padding/font */
+            font-weight: inherit;
+            color: inherit;
+            border-radius: 4px;
+        }
+
+        input.seamless-input:hover {
+            border-color: #f0f0f0;
+        }
+
+        input.seamless-input:focus {
+            padding: 4px 8px;
+            /* Restore padding on focus */
+            background: white;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 2px rgba(0, 120, 255, 0.1);
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding-bottom: 100px;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            letter-spacing: -0.02em;
+            font-weight: 700;
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+
+        /* --- LAYOUT --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* --- NAVIGATION (Tabs) --- */
+        .app-nav {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+
+            z-index: 100;
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            font-weight: 800;
+            font-size: 1.4rem;
+            letter-spacing: -0.04em;
+            color: var(--primary-red);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            line-height: 1.1;
+        }
+
+        .brand-subtitle {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            font-style: italic;
+            max-width: 300px;
+        }
+
+        /* --- CUSTOM MODAL --- */
+        .custom-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            /* Flex to center */
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            /* Max z-index */
+            backdrop-filter: blur(4px);
+            /* Modern frosted look */
+            opacity: 0;
+            visibility: hidden;
+            /* Ensure it's hidden */
+            pointer-events: none;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+
+        .custom-modal-overlay.active {
+            opacity: 1 !important;
+            visibility: visible !important;
+            /* Force visibility */
+            pointer-events: auto !important;
+        }
+
+        .custom-modal-content {
+            background: white;
+            width: 90%;
+            max-width: 440px;
+            border-radius: 24px;
+            /* Large radius per image */
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            transform: scale(0.95);
+            transition: transform 0.2s ease;
+        }
+
+        .custom-modal-overlay.active .custom-modal-content {
+            transform: scale(1);
+        }
+
+        .custom-modal-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #111;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+
+        .custom-modal-body {
+            color: #555;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .custom-modal-actions {
+            display: flex;
+            justify-content: center;
+            /* Center buttons */
+            gap: 12px;
+        }
+
+        .tab-list {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .tab-btn {
+            padding: 8px 20px;
+            height: auto;
+            border-radius: var(--radius-pill);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border: none;
+            background: transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary-blue);
+            background: rgba(0, 120, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            background-color: var(--primary-red);
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Override icon color in active state */
+        .tab-btn.active i {
+            color: white;
+        }
+
+        /* --- EMOTIONAL CHECK-IN BUTTONS --- */
+        .emo-btn {
+            width: 100%;
+            text-align: left;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #eee;
+            background: white;
+            color: var(--text-main);
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .emo-btn:hover {
+            background: #f9f9f9;
+            border-color: #ddd;
+            transform: translateX(4px);
+        }
+
+        .emo-btn.active {
+            background: #fff0f0;
+            border-color: var(--primary-red);
+            color: var(--primary-red);
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(208, 2, 27, 0.1);
+        }
+
+        /* --- SECTIONS --- */
+        .view-section {
+            display: none;
+            /* Hidden by default */
+            padding-top: 32px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- GRID & CARDS --- */
+        .grid-12 {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-card);
+            padding: 32px;
+            /* Pulse style: Minimalist, no heavy shadows */
+            border: 1px solid #f0f0f0;
+            transition: border-color 0.2s;
+        }
+
+        .card:hover {
+            border-color: #ddd;
+        }
+
+        /* --- UTILITIES --- */
+        .col-span-12 {
+            grid-column: span 12;
+        }
+
+        .col-span-8 {
+            grid-column: span 8;
+        }
+
+        .col-span-6 {
+            grid-column: span 6;
+        }
+
+        .col-span-4 {
+            grid-column: span 4;
+        }
+
+        .text-sm {
+            font-size: 0.85rem;
+        }
+
+        .text-sub {
+            color: var(--text-secondary);
+        }
+
+        .text-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .flex-gap {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* --- FORMS --- */
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.2s;
+            background: #f9f9f9;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(0, 120, 255, 0.1);
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: var(--radius-pill);
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary-red);
+            color: white;
+            box-shadow: 0 4px 12px rgba(208, 2, 27, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(208, 2, 27, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f4f4f4;
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #ddd;
+            color: var(--text-secondary);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary-red);
+            color: var(--primary-red);
+        }
+
+        /* --- PROGRESS / SCORE --- */
+        .wes-display {
+            font-size: 5rem;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -0.05em;
+            color: var(--primary-red);
+            margin-bottom: 8px;
+        }
+
+        .wes-good {
+            color: #10b981;
+        }
+
+        .wes-warn {
+            color: #f59e0b;
+        }
+
+        .wes-bad {
+            color: var(--primary-red);
+        }
+
+        /* --- MOBILE NAV & RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .app-nav {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .col-span-8,
+            .col-span-6,
+            .col-span-4 {
+                grid-column: span 12;
+            }
+
+            /* Keep text, scroll instead */
+            .wes-display {
+                font-size: 3rem;
+            }
+        }
+
+        /* --- MODAL --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            width: 100%;
+            max-width: 500px;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid #eee;
+            transform: scale(0.95);
+            transition: transform 0.3s;
+            max-height: 90vh;
+            overflow-y: auto;
+            text-align: center;
+        }
+
+        .modal-overlay.open .modal-content {
+            transform: scale(1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="app-nav">
+        <div class="container nav-content" style="height:auto; padding-top:16px; padding-bottom:16px;">
+            <div class="brand">
+                <div>Notes on Time and Tactic</div>
+                <div class="brand-subtitle">"In place of a hermeneutics of intention, we need an erotics of execution."
+                </div>
+            </div>
+
+            <div class="tab-list">
+                <button class="tab-btn active" onclick="app.switchTab('dashboard')">
+                    <i data-lucide="layout-dashboard" size="18"></i> <span class="hide-mobile">Dashboard</span>
+                </button>
+                <button class="tab-btn" onclick="app.switchTab('plan')">
+                    <i data-lucide="map" size="18"></i> <span class="hide-mobile">Plan</span>
+                </button>
+                <button class="tab-btn" onclick="app.switchTab('resources')">
+                    <i data-lucide="book-open" size="18"></i> <span class="hide-mobile">Hourly</span>
+                </button>
+                <button class="tab-btn" onclick="app.switchTab('execution')">
+                    <i data-lucide="check-square" size="18"></i> <span class="hide-mobile">Execution</span>
+                </button>
+                <button class="tab-btn" onclick="app.switchTab('review')">
+                    <i data-lucide="bar-chart-2" size="18"></i> <span class="hide-mobile">Review</span>
+                </button>
+                <button class="tab-btn" onclick="app.switchTab('education')">
+                    <i data-lucide="file-text" size="18"></i> <span class="hide-mobile">Resources</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+
+
+
+    <!-- CONTENT CONTAINER -->
+    <main class="container">
+
+        <!-- === TAB 1: DASHBOARD === -->
+        <section id="tab-dashboard" class="view-section active">
+            <div class="grid-12">
+                <!-- Vision / Intro -->
+                <div class="card col-span-12"
+                    style="background: linear-gradient(135deg, var(--primary-red) 0%, #b00015 100%); color: white; border:none;">
+                    <h2 class="text-sm" style="text-transform: uppercase; opacity: 0.9; color:white;">
+                        Current Vision
+                    </h2>
+                    <p id="dash-vision"
+                        style="font-size: 1.5rem; font-weight: 300; margin-top: 16px; margin-bottom: 24px;">
+                        "Add your
+                        vision..."</p>
+                    <div class="flex-between">
+                        <div class="text-sm text-tertiary" id="dash-week-display">Week 1 of 12</div>
+                        <button class="btn btn-secondary" onclick="app.switchTab('plan')">Edit
+                            Vision</button>
+                    </div>
+                </div>
+
+                <!-- DUE DATES Section -->
+                <div class="card col-span-12" style="background:var(--bg-card); border:1px solid #f0f0f0;">
+                    <div class="flex-between">
+                        <h3 class="text-sm text-sub" style="text-transform:uppercase;">Due Dates</h3>
+                        <button class="btn btn-secondary text-sm" onclick="app.addDueDate()">+ Add Due Date</button>
+                    </div>
+                    <div id="dash-due-dates" style="margin-top:16px;">
+                        <!-- Dates Injected Here -->
+                    </div>
+                </div>
+
+                <!-- WES Score -->
+                <div class="card col-span-4">
+                    <div class="flex-between">
+                        <h3 class="text-sm text-sub">WEEKLY EXECUTION SCORE</h3>
+                        <i data-lucide="activity" size="16" class="text-sub"></i>
+                    </div>
+                    <div class="text-sm text-sub" style="margin-top:12px; font-weight:500;">Week <span
+                            id="dash-wes-week">1</span> of 12 Week Sprint</div>
+                    <div id="dash-wes-val" class="wes-display" style="margin: 8px 0;">0%</div>
+                    <p id="dash-wes-msg" class="text-sm font-medium">No data yet.</p>
+                </div>
+
+                <!-- Emotional Cycle -->
+                <div class="card col-span-4">
+                    <div class="flex-between">
+                        <h3 class="text-sm text-sub">EMOTIONAL PHASE</h3>
+                        <i data-lucide="heart-pulse" size="16" class="text-sub"></i>
+                    </div>
+                    <div id="dash-emo-phase" style="font-size: 1.5rem; font-weight: 600; margin: 20px 0;">
+                        Uninformed
+                        Optimism</div>
+                    <p id="dash-emo-msg" class="text-sm text-sub">Week 1: Energy is high. Use it to build
+                        habits.</p>
+                </div>
+
+                <!-- Quick Actions / Motivation -->
+                <div class="card col-span-4">
+                    <div class="flex-between">
+                        <h3 class="text-sm text-sub">DAILY FOCUS</h3>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-primary" style="width: 100%;" onclick="app.switchTab('execution')">Open
+                            Today's Tactics</button>
+                        <div
+                            style="margin-top: 16px; font-size: 0.85rem; color: var(--text-secondary); text-align: center;">
+                            "Execution is the only strategy that the consumer sees."
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- === TAB 2: PLAN (Edit Goals) === -->
+        <section id="tab-plan" class="view-section">
+            <div class="grid-12">
+                <div class="col-span-12" style="margin-bottom: 24px;">
+                    <div class="card">
+                        <div class="flex-between" style="margin-bottom:16px;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <i data-lucide="target" size="20" class="text-sub"></i>
+                                <span class="text-sub"
+                                    style="font-weight:800; font-size:0.9rem; text-transform:uppercase;">12-Week
+                                    Vision</span>
+                            </div>
+                            <button class="btn btn-primary text-sm"
+                                onclick="app.updateVision(document.getElementById('plan-vision-input').value); this.textContent='Saved!'; setTimeout(()=>this.textContent='Save Vision', 2000);">Save
+                                Vision</button>
+                        </div>
+                        <div style="background:#f9f9f9; border-radius:12px; padding:16px;">
+                            <textarea id="plan-vision-input" class="seamless-input"
+                                style="width:100%; min-height:80px; font-size:1.1rem; line-height:1.5; resize:vertical; background:transparent;"
+                                placeholder="Describe your vision..."
+                                onchange="app.updateVision(this.value)"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-12 flex-between" style="margin-bottom: 20px;">
+                    <h2>Goals & Tactics</h2>
+                </div>
+
+                <div id="plan-goals-container" class="col-span-12">
+                    <!-- Goals injected here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- === TAB 3: HOURLY PLANNER === -->
+        <section id="tab-resources" class="view-section">
+            <div class="grid-12">
+                <div class="col-span-12">
+                    <h2>Hourly Planner</h2>
+                    <p class="text-sub">Plan your strategic hours for the week.</p>
+                    <div id="hourly-planner-grid" style="margin-top: 24px;">
+                        <!-- Hourly planner grid will be injected here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- === TAB 4: EXECUTION (Daily Checklist) === -->
+        <section id="tab-execution" class="view-section">
+            <div class="grid-12">
+                <div class="col-span-8">
+                    <h2>Available Tactics (This Week)</h2>
+                    <p class="text-sub">Mark items as complete to boost your WES.</p>
+
+                    <div id="execution-list" style="margin-top: 24px;">
+                        <!-- Tactics injected here -->
+                    </div>
+                </div>
+
+                <!-- Side Panel (Lag/Lead Indicators) -->
+                <!-- Side Panel (Removed Values Tracker) -->
+                <!-- <div class="col-span-4"></div> -->
+            </div>
+        </section>
+
+        <!-- === TAB 4: REVIEW (Metrics) === -->
+        <section id="tab-review" class="view-section">
+            <div class="grid-12">
+                <div class="col-span-12 flex-between">
+                    <h2>Weekly Review</h2>
+                    <button class="btn btn-primary" onclick="app.completeWeek()">Complete Week &raquo;</button>
+                </div>
+
+                <!-- WES Chart -->
+                <div class="col-span-8 card">
+                    <h3>Score History</h3>
+                    <p class="text-sm text-sub" style="margin-top:4px;">Results lag behind action. Your score is not a
+                        prediction of success — it is success, occurring now, in the doing.</p>
+                    <canvas id="wesChart" style="max-height:300px; margin-top:16px;"></canvas>
+                </div>
+
+                <!-- Week Utils -->
+                <div class="col-span-4 card">
+                    <h3>Week Utils</h3>
+                    <p class="text-sm text-sub" style="margin-top:12px;">Finishing the week archives your score and
+                        advances the schedule.</p>
+                    <div style="margin-top:20px; padding:16px; background:#f9f9f9; border-radius:12px;">
+                        <div class="text-sub text-sm">Reviewing Week</div>
+                        <div style="font-size:2rem; font-weight:800; color:var(--primary-red);" id="review-week-num">1
+                        </div>
+                    </div>
+                    <button class="btn btn-outline text-sm"
+                        style="margin-top:16px; width:100%; border-color:#e0e0e0; color:#888;"
+                        onclick="app.resetData()">Reset Everything (Start Over)</button>
+                </div>
+            </div>
+
+            <!-- Interactive Emotional Phase -->
+            <div class="col-span-6 card">
+                <h3>Emotional Check-in</h3>
+                <p class="text-sm text-sub" style="margin-bottom:16px;">How does this week feel?</p>
+                <div id="emotional-selector" style="display:flex; flex-direction:column; gap:8px;">
+                    <!-- Injected by renderReview -->
+                </div>
+            </div>
+
+            <!-- Health & Wellness Log -->
+            <div class="col-span-6 card">
+                <h3>Health & Accidents</h3>
+                <p class="text-sm text-sub">Log any unwellness or incidents.</p>
+
+                <div style="display:flex; gap:8px; margin-top:16px;">
+                    <input type="text" id="health-note-input" class="seamless-input"
+                        placeholder="Note (e.g., flu, back pain)..." style="background:#f9f9f9; padding:8px;">
+                    <button class="btn btn-secondary" onclick="app.addHealthLog()">Add</button>
+                </div>
+
+                <div id="health-log-list" style="margin-top:16px; max-height:200px; overflow-y:auto;">
+                    <!-- Logs injected here -->
+                </div>
+            </div>
+
+            </div>
+        </section>
+
+
+
+        <!-- === TAB 5: RESOURCES === -->
+        <section id="tab-resources" class="view-section">
+            <div class="card col-span-12">
+                <h2>Model Week</h2>
+                <p>Time blocking visualization coming here.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ONBOARDING MODAL -->
+    <div id="onboarding-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">Welcome to the 12 Week Year</h2>
+            <div id="modal-body" style="margin: 20px 0; color: var(--text-secondary);">
+                <p>Focus on the critical few. Ignore the trivial many.</p>
+                <p>This system will help you execute more in 12 weeks than most do in 12 months.</p>
+            </div>
+            <div style="text-align: right;">
+                <button class="btn btn-primary" onclick="app.completeOnboarding()">Get Started</button>
+            </div>
+        </div>
+    </div>
+    </div> <!-- Close onboarding-modal overlay -->
+
+    <!-- === TAB 6: EDUCATION (Resources) === -->
+    <section id="tab-education" class="view-section">
+        <div class="grid-12">
+            <div class="col-span-12 card">
+                <h2>The Execution Engine: Key Principles</h2>
+
+                <h3 style="margin-top:24px; color:var(--primary-red);">Move Beyond "Thinking"</h3>
+                <p>Success is not about having better ideas, but about consistent execution. A plan is only as good
+                    as
+                    the action it triggers.</p>
+
+                <h3 style="margin-top:24px; color:var(--primary-red);">Build a Support Structure</h3>
+                <p>Do not rely on willpower alone, as it is a finite resource that gets fatigued. You must create a
+                    "support structure" (tools and routines) that makes execution easier than avoidance.</p>
+
+                <h3 style="margin-top:24px; color:var(--primary-red);">The Weekly Plan</h3>
+                <p>This is your daily action map. It is not a generic to-do list; it is a subset of your 12-week
+                    strategies designed to focus only on high-value, strategic activities.</p>
+
+                <h3 style="margin-top:24px; color:var(--primary-red);">Peer Accountability (WAM)</h3>
+                <p>Working in a vacuum is a recipe for failure. Using a "Weekly Accountability Meeting" (WAM) with
+                    2–4
+                    peers can increase your success rate by up to seven times.</p>
+
+                <h3 style="margin-top:24px; color:var(--primary-red);">The 80% Rule for Written Plans</h3>
+                <p>Research shows that a written plan is 60% to 80% more likely to be executed than a plan kept only
+                    in
+                    your head. Writing creates transparency and removes the ability to make excuses.</p>
+
+                <hr style="margin:32px 0; border:0; border-top:1px solid #eee;">
+
+                <h2>The 3-Step Weekly Routine</h2>
+                <ul style="margin-left:20px; margin-top:16px; line-height:1.6;">
+                    <li><strong>Score Your Week:</strong> At the end of each week, calculate your "Execution Score"
+                        based on the percentage of planned strategies you actually completed.</li>
+                    <li style="margin-top:8px;"><strong>Plan the Upcoming Week:</strong> Spend 15 minutes every
+                        Sunday
+                        or Monday morning reviewing your 12-week strategies and scheduling them into your new weekly
+                        plan. Never start a week without a written plan.</li>
+                    <li style="margin-top:8px;"><strong>Hold a WAM:</strong> Meet with your accountability partners
+                        for
+                        15–30 minutes to review last week’s execution scores and set intentions for the next week.
+                    </li>
+                </ul>
+
+                <hr style="margin:32px 0; border:0; border-top:1px solid #eee;">
+
+                <h2>High-Performance Measurement</h2>
+                <ul style="margin-left:20px; margin-top:16px; line-height:1.6;">
+                    <li><strong>Focus on Lead Indicators:</strong> Most people only track results (lag indicators).
+                        High
+                        performers track their actions (lead indicators) because you have more control over your
+                        actions
+                        than your results.</li>
+                    <li style="margin-top:8px;"><strong>The 85% Execution Target:</strong> You do not need to be
+                        perfect. Consistently achieving an 85% execution score almost guarantees you will reach your
+                        12-week goals.</li>
+                    <li style="margin-top:8px;"><strong>Face the Truth:</strong> Use your scores as an objective
+                        feedback loop to identify whether failure is due to a flawed plan or poor execution.
+                        Confronting
+                        the "productive tension" of a low score is the only way to improve.</li>
+                </ul>
+                <div
+                    style="margin-top: 40px; border-top: 1px solid #f0f0f0; padding-top: 20px; font-size: 0.8rem; color: var(--text-tertiary);">
+                    We're building upon the idea from <a href="https://12weekyear.com/" target="_blank"
+                        style="color: inherit; text-decoration: underline;">https://12weekyear.com/</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER / DATA MANAGEMENT -->
+    <div class="container" style="border-top:1px solid #eee; margin-top:40px; padding:20px 0; text-align:center;">
+        <h3 class="text-sm text-sub" style="margin-bottom:12px;">Back Up Your Plan</h3>
+        <div style="display:flex; justify-content:center; gap:16px;">
+            <button class="btn btn-secondary text-sm" onclick="app.exportData()">Export Current Plan</button>
+            <button class="btn btn-secondary text-sm" onclick="document.getElementById('import-file').click()">Import
+                Plan</button>
+            <input type="file" id="import-file" style="display:none" onchange="app.importData(this)" accept=".json">
+        </div>
+        <p class="text-xs text-sub" style="margin-top:8px;">Save your plan locally as a JSON file.</p>
+    </div>
+
+    <script>
+        // --- APP STATE & LOGIC ---
+
+        class AppStore {
+            constructor() {
+                // Default State
+                this.state = {
+                    version: 1,
+                    onboardingComplete: false,
+                    currentWeek: 1,
+                    vision: "Define your 12-week vision here...",
+                    goals: [
+                        // Example Goal structure for new users
+                        {
+                            id: 'g1',
+                            title: 'Launch MVP Website',
+                            tactics: [
+                                { id: 't1', title: 'Draft PRFAQ', completed: false },
+                                { id: 't2', title: 'Set up Repo', completed: true }
+                            ]
+                        }
+                    ],
+                    metrics: {
+                        wesHistory: [],
+                        lagLeadHandlers: {}
+                    },
+                    // New fields
+                    emotionalHistory: {}, // { weekNum: "Phase Name" }
+                    healthLogs: [] // { id, date, note, week }
+                };
+
+                this.init();
+            }
+
+            init() {
+                this.load();
+                this.render();
+                lucide.createIcons();
+
+                if (!this.state.onboardingComplete) {
+                    this.startOnboarding();
+                }
+
+                // Auto-save on visibility change
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'hidden') this.save();
+                });
+            }
+
+            // --- PERSISTENCE ---
+            save() {
+                try {
+                    localStorage.setItem('sprintpulse_data', JSON.stringify(this.state));
+                } catch (e) {
+                    console.error('Save failed', e);
+                    alert("Storage Error: Could not save data. LocalStorage might be full or disabled.");
+                }
+            }
+
+            load() {
+                const saved = localStorage.getItem('sprintpulse_data');
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        // Simple migration/merge if needed, for now direct replace
+                        this.state = { ...this.state, ...parsed };
+                    } catch (e) { console.error('Load failed', e); }
+                }
+            }
+
+            exportData() {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.state));
+                const node = document.createElement('a');
+                node.href = dataStr;
+                node.download = `sprintpulse_week${this.state.currentWeek}.json`;
+                node.click();
+            }
+
+            // --- CORE LOGIC ---
+
+            // Goals
+            addGoal() {
+                const newGoal = {
+                    id: 'g' + Date.now(),
+                    title: '',
+                    tactics: []
+                };
+                this.state.goals.push(newGoal);
+                this.save();
+                this.render();
+
+                // Focus the new goal input
+                setTimeout(() => {
+                    const inputs = document.querySelectorAll(`input[data-goal-id="${newGoal.id}"]`);
+                    if (inputs.length > 0) inputs[0].focus();
+                }, 50);
+            }
+
+            updateGoalTitle(id, newTitle) {
+                const goal = this.state.goals.find(g => g.id === id);
+                if (goal) {
+                    goal.title = newTitle;
+                    this.save();
+                }
+            }
+
+            removeGoal(goalId) {
+                this.showConfirm(
+                    "Delete Goal?",
+                    "Are you sure you want to remove this goal?",
+                    () => {
+                        this.state.goals = this.state.goals.filter(g => g.id !== goalId);
+                        this.save();
+                        this.render();
+                    },
+                    "Delete"
+                );
+            }
+
+            editVision() {
+                const body = `
+                        <p style="margin-bottom:12px;">Update your 12-week Vision:</p>
+                        <div style="text-align:left;">
+                            <textarea id="vision-input" style="width:100%; height:120px; padding:12px; border:1px solid #ddd; border-radius:8px; font-family:inherit; resize:vertical;">${this.state.vision}</textarea>
+                        </div>
+                    `;
+                this.showConfirm(
+                    "Edit Vision",
+                    body,
+                    () => {
+                        const val = document.getElementById('vision-input').value;
+                        if (val) {
+                            this.state.vision = val;
+                            this.save();
+                            this.render();
+                        }
+                    },
+                    "Save Vision"
+                );
+            }
+
+            // Tactics
+            addTactic(goalId) {
+                const goal = this.state.goals.find(g => g.id === goalId);
+                if (goal) {
+                    const newTactic = {
+                        id: 't' + Date.now(),
+                        title: '',
+                        completed: false
+                    };
+                    goal.tactics.push(newTactic);
+                    this.save();
+                    this.render();
+
+                    // Focus the new tactic input
+                    setTimeout(() => {
+                        const inputs = document.querySelectorAll(`input[data-tactic-id="${newTactic.id}"]`);
+                        if (inputs.length > 0) inputs[0].focus();
+                    }, 50);
+                }
+            }
+
+            updateTacticTitle(goalId, tacticId, newTitle) {
+                const goal = this.state.goals.find(g => g.id === goalId);
+                if (goal) {
+                    const tactic = goal.tactics.find(t => t.id === tacticId);
+                    if (tactic) {
+                        tactic.title = newTitle;
+                        this.save();
+                    }
+                }
+            }
+
+            toggleTactic(goalId, tacticId) {
+                const goal = this.state.goals.find(g => g.id === goalId);
+                if (goal) {
+                    const tactic = goal.tactics.find(t => t.id === tacticId);
+                    if (tactic) {
+                        tactic.completed = !tactic.completed;
+                        this.save();
+                        this.render(); // Re-render to update WES
+                    }
+                }
+            }
+
+            removeTactic(goalId, tacticId) {
+                const goal = this.state.goals.find(g => g.id === goalId);
+                if (goal) {
+                    goal.tactics = goal.tactics.filter(t => t.id !== tacticId);
+                    this.save();
+                    this.render();
+                }
+            }
+
+            // Calculations
+            calculateWES() {
+                let total = 0;
+                let completed = 0;
+                this.state.goals.forEach(g => {
+                    g.tactics.forEach(t => {
+                        total++;
+                        if (t.completed) completed++;
+                    });
+                });
+                return total === 0 ? 0 : Math.round((completed / total) * 100);
+            }
+
+            evaluateEmotionalPhase() {
+                // If user manually set it for this week, use that
+                if (this.state.emotionalHistory && this.state.emotionalHistory[this.state.currentWeek]) {
+                    return { phase: this.state.emotionalHistory[this.state.currentWeek], msg: "" };
+                }
+                // Default fallback
+                return { phase: "Peaceful", msg: "Select your emotional state." };
+            }
+
+            setEmotionalPhase(phase) {
+                if (!this.state.emotionalHistory) this.state.emotionalHistory = {};
+                this.state.emotionalHistory[this.state.currentWeek] = phase;
+                this.save();
+                this.render(); // Update both Dashboard and Review
+            }
+
+            addHealthLog() {
+                const input = document.getElementById('health-note-input');
+                const note = input.value;
+                if (note) {
+                    if (!this.state.healthLogs) this.state.healthLogs = [];
+                    this.state.healthLogs.unshift({
+                        id: 'h' + Date.now(),
+                        date: new Date().toLocaleDateString(),
+                        week: this.state.currentWeek,
+                        note: note
+                    });
+                    input.value = '';
+                    this.save();
+                    this.renderReview(); // Re-render review tab to show new log
+                }
+            }
+
+            removeHealthLog(id) {
+                if (this.state.healthLogs) {
+                    this.state.healthLogs = this.state.healthLogs.filter(h => h.id !== id);
+                    this.save();
+                    this.renderReview();
+                }
+            }
+
+            // --- DUE DATES (New Feature) ---
+            addDueDate() {
+                if (!this.state.dueDates) this.state.dueDates = [];
+                const id = 'ddl_' + Date.now();
+                this.state.dueDates.push({
+                    id: id,
+                    title: '',
+                    type: '',
+                    duration: ''
+                });
+                this.save();
+                this.renderDashboard();
+            }
+
+            updateDueDate(id, field, value) {
+                const item = this.state.dueDates.find(d => d.id === id);
+                if (item) {
+                    item[field] = value;
+                    this.save();
+                    // No need to re-render entire dashboard for simple input changes if we used onchange,
+                    // but for simplicity we can, or just let it stay. 
+                    // To be safe and keep it simple:
+                    this.save();
+                }
+            }
+
+            removeDueDate(id) {
+                this.state.dueDates = this.state.dueDates.filter(d => d.id !== id);
+                this.save();
+                this.renderDashboard();
+            }
+
+            updateVision(newVal) {
+                this.state.vision = newVal;
+                this.save();
+                // Should update dashboard view if logical, but currently on Plan tab.
+                // It will update when tab switches.
+            }
+
+            // --- ONBOARDING MANAGER ---
+            startOnboarding() {
+                document.getElementById('onboarding-modal').classList.add('open');
+                this.onboardingStep = 0;
+                this.renderOnboardingStep();
+            }
+
+            renderOnboardingStep() {
+                const title = document.getElementById('modal-title');
+                const body = document.getElementById('modal-body');
+                const btn = document.querySelector('#onboarding-modal .btn-primary');
+
+                if (this.onboardingStep === 0) {
+                    title.textContent = "Welcome to the 12 Week Year";
+                    body.innerHTML = "<p>Most people overestimate what they can do in a day, but underestimate what they can do in 12 weeks.</p><p>This system replaces 'annualized thinking' with a 12-week execution sprint.</p>";
+                    btn.textContent = "Next: Define Vision";
+                    btn.onclick = () => { this.onboardingStep++; this.renderOnboardingStep(); };
+                } else if (this.onboardingStep === 1) {
+                    title.textContent = "Step 1: Your Vision";
+                    body.innerHTML = `<p>What do you want to achieve in 12 weeks? Be specific.</p><textarea id="ob-vision" style="width:100%; height:80px; margin-top:10px; padding:8px;">${this.state.vision}</textarea>`;
+                    btn.textContent = "Next: Set First Goal";
+                    btn.onclick = () => {
+                        const v = document.getElementById('ob-vision').value;
+                        if (v) this.state.vision = v;
+                        this.onboardingStep++;
+                        this.renderOnboardingStep();
+                    };
+                } else if (this.onboardingStep === 2) {
+                    title.textContent = "Step 2: Your First Goal";
+                    body.innerHTML = `<p>Create one major goal that aligns with your vision.</p><input id="ob-goal" type="text" placeholder="e.g. Write 5 chapters" style="width:100%; padding:8px; margin-top:10px;">`;
+                    btn.textContent = "Ready to Start";
+                    btn.onclick = () => {
+                        const g = document.getElementById('ob-goal').value;
+                        if (g) {
+                            this.state.goals = [{ id: 'g1', title: g, tactics: [] }];
+                        } else {
+                            this.state.goals = [];
+                        }
+                        this.completeOnboarding();
+                    };
+                }
+            }
+
+            completeOnboarding() {
+                this.state.onboardingComplete = true;
+                this.save();
+                document.getElementById('onboarding-modal').classList.remove('open');
+                this.render();
+            }
+
+            // --- UI RENDERERS ---
+            render() {
+                this.renderDashboard();
+                this.renderPlan();
+                this.renderExecution();
+                this.renderReview();
+                this.renderHourlyPlanner();
+                lucide.createIcons();
+            }
+
+            renderDashboard() {
+                document.getElementById('dash-vision').textContent = this.state.vision;
+                document.getElementById('dash-week-display').textContent = `Week ${this.state.currentWeek} of 12`;
+
+                // WES
+                const score = this.calculateWES();
+                const scoreEl = document.getElementById('dash-wes-val');
+                const msgEl = document.getElementById('dash-wes-msg');
+
+                scoreEl.textContent = score + '%';
+                scoreEl.className = 'wes-display ' + (score >= 85 ? 'wes-good' : score >= 65 ? 'wes-warn' : 'wes-bad');
+
+                if (score >= 85) msgEl.textContent = "Excellent! Statistically likely to hit goals.";
+                else if (score >= 65) msgEl.textContent = "Keep pushing. Focus on high-impact tactics.";
+                else msgEl.textContent = "Lagging behind. Reclaim your calendar.";
+
+                // Emotional Phase
+                const emo = this.evaluateEmotionalPhase();
+                document.getElementById('dash-emo-phase').textContent = emo.phase;
+                document.getElementById('dash-emo-phase').textContent = emo.phase;
+                document.getElementById('dash-emo-msg').textContent = emo.msg;
+
+                // Due Dates
+                const ddContainer = document.getElementById('dash-due-dates');
+                if (ddContainer) {
+                    const dates = this.state.dueDates || [];
+                    if (dates.length === 0) {
+                        ddContainer.innerHTML = '<div class="text-sub text-sm">No due dates added.</div>';
+                    } else {
+                        ddContainer.innerHTML = dates.map(d => `
+                            <div style="display:grid; grid-template-columns: 2fr 1fr 1fr 30px; gap:8px; margin-bottom:8px; align-items:center;">
+                                <input type="text" class="seamless-input" placeholder="Task / Deadline" value="${d.title}" onchange="app.updateDueDate('${d.id}', 'title', this.value)">
+                                <input type="text" class="seamless-input" placeholder="Type" value="${d.type}" onchange="app.updateDueDate('${d.id}', 'type', this.value)">
+                                <input type="text" class="seamless-input" placeholder="Hours needed?" value="${d.duration}" onchange="app.updateDueDate('${d.id}', 'duration', this.value)">
+                                <button class="text-sub" onclick="app.removeDueDate('${d.id}')"><i data-lucide="trash-2" size="14"></i></button>
+                            </div>
+                        `).join('');
+                        lucide.createIcons();
+                    }
+                }
+            }
+
+            addGoal(title) {
+                if (!title) {
+                    this.showAlert("Missing Title", "Please enter a goal title.");
+                    return;
+                }
+                this.state.goals.push({
+                    id: 'g' + Date.now(),
+                    title: title,
+                    tactics: []
+                });
+                this.save();
+                this.render();
+            }
+
+            removeGoal(id) {
+                this.showConfirm(
+                    "Delete Goal?",
+                    "Delete this goal and all its tactics?",
+                    () => {
+                        this.state.goals = this.state.goals.filter(g => g.id !== id);
+                        this.save();
+                        this.render();
+                    },
+                    "Delete"
+                );
+            }
+
+            updateGoalTitle(id, title) {
+                const goal = this.state.goals.find(g => g.id === id);
+                if (goal) {
+                    goal.title = title;
+                    this.save();
+                }
+            }
+
+            addTactic(goalId, title, week, isRecurring) {
+                if (!title) return;
+
+                const goal = this.state.goals.find(g => g.id === goalId);
+                if (goal) {
+                    if (isRecurring) {
+                        for (let w = 1; w <= 12; w++) {
+                            goal.tactics.push({
+                                id: 't' + Date.now() + '_w' + w,
+                                title: title,
+                                completed: false,
+                                week: w
+                            });
+                        }
+                    } else {
+                        goal.tactics.push({
+                            id: 't' + Date.now(),
+                            title: title,
+                            completed: false,
+                            week: week
+                        });
+                    }
+                    this.save();
+                    this.render();
+                    // Auto-open the week we just added to
+                    if (week) setTimeout(() => this.toggleWeekAccordion(goalId, week), 100);
+                }
+            }
+
+            renderPlan() {
+                const container = document.getElementById('plan-goals-container');
+                // Vision Input (if exists outside list)
+                const visInput = document.getElementById('plan-vision-input');
+                if (visInput) visInput.value = this.state.vision || '';
+
+                container.innerHTML = '';
+
+                this.state.goals.forEach(goal => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.marginBottom = '24px';
+
+                    let html = `
+                        <div class="flex-between" style="margin-bottom:16px;">
+                             <input type="text" class="seamless-input" 
+                                   style="font-size:1.1rem; color:var(--primary-red); font-weight:700; width:100%;" 
+                                   value="${goal.title}" placeholder="Goal Title..."
+                                   onchange="app.updateGoalTitle('${goal.id}', this.value)">
+                            <div class="flex-gap" style="margin-left:8px;">
+                                <button class="text-sub" onclick="app.removeGoal('${goal.id}')"><i data-lucide="trash-2" size="16"></i></button>
+                            </div>
+                        </div>
+                    `;
+
+                    // Accordion for Weeks 1-12
+                    for (let w = 1; w <= 12; w++) {
+                        const uniqueId = `acc-${goal.id}-w${w}`;
+                        const weekTactics = goal.tactics.filter(t => t.week === w);
+                        const isOpen = this.state.expandedWeeks && this.state.expandedWeeks[uniqueId];
+
+                        html += `
+                            <div style="border:1px solid #eee; border-radius:8px; margin-bottom:8px; overflow:hidden;">
+                                <div onclick="app.toggleWeekAccordion('${goal.id}', ${w})" 
+                                     style="background:#f9f9f9; padding:10px 16px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; font-weight:600;">
+                                    <span>Week ${w}</span>
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <span class="text-sub text-xs">${weekTactics.length} tactics</span>
+                                        <i data-lucide="${isOpen ? 'chevron-up' : 'chevron-down'}" size="16"></i>
+                                    </div>
+                                </div>
+                                
+                                <div id="${uniqueId}" style="display:${isOpen ? 'block' : 'none'}; padding:16px; border-top:1px solid #eee;">
+                                    ${weekTactics.map(t => `
+                                        <div class="flex-between" style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid #f0f0f0;">
+                                            <input type="text" class="seamless-input" value="${t.title}" 
+                                                   onchange="app.updateTacticTitle('${goal.id}', '${t.id}', this.value)"
+                                                   style="flex:1;">
+                                            <button class="text-sub" onclick="app.removeTactic('${goal.id}', '${t.id}')"><i data-lucide="x" size="14"></i></button>
+                                        </div>
+                                    `).join('')}
+                                    
+                                    <div style="margin-top:12px; display:flex; gap:8px;">
+                                        <input type="text" id="new-tactic-${uniqueId}" placeholder="New tactic for Week ${w}..." 
+                                               class="seamless-input" style="border:1px solid #eee; padding:8px; border-radius:4px; flex:1;"
+                                               onkeypress="if(event.key==='Enter') { app.addTactic('${goal.id}', this.value, ${w}, false); }">
+                                        <button class="btn btn-secondary" style="padding:4px 12px; font-size:0.8rem;"
+                                                onclick="const inp = document.getElementById('new-tactic-${uniqueId}'); app.addTactic('${goal.id}', inp.value, ${w}, false)">Add</button>
+                                    </div>
+                                    <div style="text-align:right; margin-top:4px;">
+                                         <button class="text-sub text-xs" 
+                                                onclick="const inp = document.getElementById('new-tactic-${uniqueId}'); if(inp.value) app.addTactic('${goal.id}', inp.value, ${w}, true)">+ Add Recurring (All 12 Weeks)</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    card.innerHTML = html;
+                    container.appendChild(card);
+                });
+
+                // Add Goal Inline (Footer)
+                const footer = document.createElement('div');
+                footer.className = 'card';
+                footer.style.marginTop = '20px';
+                footer.style.background = '#f9f9f9';
+                footer.innerHTML = `
+                    <div style="display:flex; gap:12px; align-items:center;">
+                        <input type="text" id="new-goal-input" placeholder="Enter a new 12-week goal..." 
+                               style="flex:1; padding:12px; border:1px solid #ddd; border-radius:4px; font-size:1rem;"
+                               onkeypress="if(event.key==='Enter') app.addGoal(this.value)">
+                        <button class="btn btn-primary" onclick="app.addGoal(document.getElementById('new-goal-input').value)">
+                            Add Goal
+                        </button>
+                    </div>
+                `;
+                container.appendChild(footer);
+                lucide.createIcons();
+            }
+
+            toggleWeekAccordion(goalId, week) {
+                if (!this.state.expandedWeeks) this.state.expandedWeeks = {};
+                const id = `acc-${goalId}-w${week}`;
+                this.state.expandedWeeks[id] = !this.state.expandedWeeks[id];
+                this.renderPlan();
+            }
+
+            removeTactic(goalId, tacticId) {
+                const goal = this.state.goals.find(g => g.id === goalId);
+                if (goal) {
+                    goal.tactics = goal.tactics.filter(t => t.id !== tacticId);
+                    this.save();
+                    this.render();
+                }
+            }
+
+            updateTacticTitle(goalId, tacticId, title) {
+                const goal = this.state.goals.find(g => g.id === goalId);
+                if (goal) {
+                    const t = goal.tactics.find(t => t.id === tacticId);
+                    if (t) {
+                        t.title = title;
+                        // If it was a recurring one, should we update others? 
+                        // With Generator strategy, they are independent. Updating one updates only that week's.
+                        // This is actually safer for history. If I change W5's tactic, W1's historical record remains.
+                        this.save();
+                    }
+                }
+            }
+
+            toggleTactic(goalId, tacticId) {
+                const goal = this.state.goals.find(g => g.id === goalId);
+                if (goal) {
+                    const t = goal.tactics.find(t => t.id === tacticId);
+                    if (t) {
+                        t.completed = !t.completed;
+                        this.save();
+                        this.render();
+                    }
+                }
+            }
+
+            renderExecution() {
+                const container = document.getElementById('execution-list');
+                container.innerHTML = '';
+
+                if (this.state.goals.length === 0) {
+                    container.innerHTML = `<div class="card text-sub text-center">No goals set.</div>`;
+                    // return; // Don't return early so we still render the side panel logic if needed
+                } else {
+                    this.state.goals.forEach(goal => {
+                        // Filter tactics for the current week
+                        const currentWeekTactics = goal.tactics.filter(t => (t.week || 1) === this.state.currentWeek);
+
+                        if (currentWeekTactics.length === 0) return;
+
+                        const group = document.createElement('div');
+                        group.className = 'card';
+                        group.style.marginBottom = '16px';
+                        group.innerHTML = `<h4 style="margin-bottom:12px; font-size:0.9rem; color:var(--accent-orange);">${goal.title}</h4>`;
+
+                        currentWeekTactics.forEach(t => {
+                            const row = document.createElement('div');
+                            row.style.display = 'flex';
+                            row.style.alignItems = 'center';
+                            row.style.padding = '8px 0';
+                            row.style.borderBottom = '1px solid #f9f9f9';
+
+                            row.innerHTML = `
+                                <input type="checkbox" ${t.completed ? 'checked' : ''} 
+                                       style="width:20px; height:20px; margin-right:12px; cursor:pointer;"
+                                       onchange="app.toggleTactic('${goal.id}', '${t.id}')">
+                                <span style="flex:1; ${t.completed ? 'text-decoration:line-through; opacity:0.4;' : ''}">${t.title}</span>
+                            `;
+                            group.appendChild(row);
+                        });
+                        container.appendChild(group);
+                    });
+                }
+
+                // Bind Indicator Inputs
+                // We assume there are inputs with specific IDs or we render them here. 
+                // In the HTML I created earlier, they didn't have specific IDs, so I should probably select them by placeholder or add IDs.
+                // Better approach: Re-render that side panel or bind events if they exist.
+                // Actually, I'll access them via the DOM if they are static in the HTML.
+                // But wait, the previous HTML had them static. Let's look at the identifiers.
+                // They were: <input type="text" placeholder="e.g. Revenue ($)" ...>
+                // I will add IDs to them in a separate step or just querySelector them.
+                // Let's assume for this step I will inject IDs or find them.
+
+                const inputs = document.querySelectorAll('#tab-execution input[type="text"]');
+                if (inputs.length >= 2) {
+                    inputs[0].value = this.state.metrics[`week${this.state.currentWeek}_lag`] || '';
+                    inputs[0].onchange = (e) => this.updateMetric('lag', e.target.value);
+
+                    inputs[1].value = this.state.metrics[`week${this.state.currentWeek}_lead`] || '';
+                    inputs[1].onchange = (e) => this.updateMetric('lead', e.target.value);
+                }
+            }
+
+            updateMetric(type, value) {
+                this.state.metrics[`week${this.state.currentWeek}_${type}`] = value;
+                this.save();
+            }
+
+            renderReview() {
+                // ... Existing chart logic will be handled by Chart.js update ... but we need to ensure the container is ready
+                if (document.getElementById('review-week-num')) {
+                    document.getElementById('review-week-num').textContent = this.state.currentWeek;
+                }
+
+                // Show Strategic Hours for specific historical weeks? 
+                // Using the requested format: "X hours in week X used strategically"
+                // We'll append this to score history card or a new location.
+                // Let's put it under the chart title or in the details.
+                // Actually, let's create a list of past weeks' stats.
+                const historyContainer = document.getElementById('review-history-stats');
+                if (!historyContainer) {
+                    // Inject container if missing (hacky but works if html structure is strict)
+                    // Better: Update HTML structure in a separate pass? 
+                    // Let's just find the Score History card and append.
+                    const card = document.querySelector('#wesChart').parentElement;
+                    let statsDiv = card.querySelector('.strat-stats');
+                    if (!statsDiv) {
+                        statsDiv = document.createElement('div');
+                        statsDiv.className = 'strat-stats';
+                        statsDiv.style.marginTop = '16px';
+                        statsDiv.style.borderTop = '1px solid #eee';
+                        statsDiv.style.paddingTop = '16px';
+                        card.appendChild(statsDiv);
+                    }
+
+                    const history = this.state.metrics.wesHistory || [];
+                    if (history.length === 0) {
+                        statsDiv.innerHTML = '<div class="text-sub text-sm">No history yet.</div>';
+                    } else {
+                        statsDiv.innerHTML = history.map(h => {
+                            // Find tactics for this week that are completed
+                            // This relies on current state of goals/tactics
+                            const completedTactics = this.state.goals.flatMap(g => g.tactics)
+                                .filter(t => t.week === h.week && t.completed)
+                                .map(t => `<div class="text-xs text-sub" style="margin-left:8px;">• ${t.title}</div>`)
+                                .join('');
+
+                            return `
+                                <div style="margin-bottom:12px;">
+                                    <div class="text-sm" style="margin-bottom:4px;">
+                                        <span style="font-weight:600; color:var(--primary-red);">Week ${h.week}</span>: 
+                                        ${h.strategicHours || 0} strategic hours. WES: ${h.score}%
+                                    </div>
+                                    ${completedTactics || '<div class="text-xs text-sub" style="margin-left:8px;">No finished tactics recorded.</div>'}
+                                </div>`;
+                        }).join('');
+                    }
+                }
+
+                // --- Emotional Selector ---
+                // --- Emotional Selector ---
+                const phases = ["Amazed", "Peaceful", "Passionate", "Frustrated", "Purposeless", "Depressed"];
+                const currentPhase = this.evaluateEmotionalPhase().phase; // This gets saved or default
+
+                const selContainer = document.getElementById('emotional-selector');
+                if (selContainer) {
+                    selContainer.innerHTML = phases.map(p => {
+                        const active = p === currentPhase;
+                        return `
+                            <button onclick="app.setEmotionalPhase('${p}')" class="emo-btn ${active ? 'active' : ''}">
+                                ${p} ${active ? '<i data-lucide="check" size="16"></i>' : ''}
+                            </button>
+                        `;
+                    }).join('');
+                    lucide.createIcons();
+                }
+
+                // --- Health Logs ---
+                const logContainer = document.getElementById('health-log-list');
+                const logs = (this.state.healthLogs || []).filter(h => h.week === this.state.currentWeek);
+
+                if (logContainer) {
+                    if (logs.length === 0) {
+                        logContainer.innerHTML = '<div class="text-sub text-sm">No notes for this week.</div>';
+                    } else {
+                        logContainer.innerHTML = logs.map(l => `
+                            <div style="padding:8px; margin-bottom:8px; background:white; border:1px solid #eee; border-radius:8px; font-size:0.9rem;">
+                                <div class="flex-between">
+                                    <span class="text-sub text-sm">${l.date}</span>
+                                    <button class="text-sub" onclick="app.removeHealthLog('${l.id}')"><i data-lucide="x" size="12"></i></button>
+                                </div>
+                                <div style="margin-top:4px;">${l.note}</div>
+                            </div>
+                        `).join('');
+                    }
+                }
+
+                // Chart.js WES
+                this.updateWesChart();
+                lucide.createIcons();
+            }
+
+            updateWesChart() {
+                const ctx = document.getElementById('wesChart');
+                if (!ctx) return;
+
+                // Destroy old instance if exists
+                if (window.myWesChart) window.myWesChart.destroy();
+
+                const wesData = this.state.metrics.wesHistory || [];
+
+                // Labels should match the data points exactly
+                const labels = wesData.map(d => `W${d.week}`);
+                const dataPoints = wesData.map(d => d.score);
+
+                window.myWesChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Execution Score',
+                            data: dataPoints,
+                            borderColor: '#D0021B',
+                            backgroundColor: 'rgba(208, 2, 27, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { min: 0, max: 100 }
+                        }
+                    }
+                });
+            }
+
+
+
+            toggleTimeBlock(id) {
+                if (!this.state.modelWeek) this.state.modelWeek = {};
+
+                const types = ['empty', 'plan', 'action', 'breakout'];
+                const current = this.state.modelWeek[id] || 'empty';
+                const next = types[(types.indexOf(current) + 1) % types.length];
+
+                this.state.modelWeek[id] = next;
+                this.save();
+                this.renderHourlyPlanner();
+            }
+
+            calculateStrategicHours() {
+                if (!this.state.modelWeek) return 0;
+                // Count 'action' blocks as Strategic Hours (Execution time)
+                return Object.values(this.state.modelWeek).filter(v => v === 'action').length;
+            }
+
+            completeWeek() {
+                this.showConfirm(
+                    `Finish Week ${this.state.currentWeek}?`,
+                    "This will lock current stats and advance to the next week.",
+                    () => {
+                        // 1. Archive Stats
+                        const existingEntryIndex = this.state.metrics.wesHistory.findIndex(h => h.week === this.state.currentWeek);
+
+                        const entry = {
+                            week: this.state.currentWeek,
+                            score: this.calculateWES(),
+                            strategicHours: this.calculateStrategicHours(),
+                            lag: this.state.metrics[`week${this.state.currentWeek}_lag`],
+                            lead: this.state.metrics[`week${this.state.currentWeek}_lead`]
+                        };
+
+                        if (existingEntryIndex >= 0) {
+                            this.state.metrics.wesHistory[existingEntryIndex] = entry;
+                        } else {
+                            this.state.metrics.wesHistory.push(entry);
+                        }
+
+                        // 2. Increment Week
+                        if (this.state.currentWeek < 12) {
+                            this.state.currentWeek++;
+                            this.state.modelWeek = {}; // Reset Hourly Planner
+                            this.showAlert("Week " + this.state.currentWeek, "Welcome to the new week. Let's execute!");
+                        } else {
+                            this.showAlert("Congratulations!", "🎉 You completed the 12 Week Year!");
+                            this.state.currentWeek = 13;
+                        }
+
+                        this.save();
+                        this.render();
+                    },
+                    'Finish Week'
+                );
+            }
+
+            // --- CUSTOM MODAL HELPERS ---
+            showAlert(title, message, btnText = 'OK') {
+                const modal = document.getElementById('global-modal');
+                if (!modal) return alert(message);
+                document.getElementById('global-modal-title').innerText = title;
+                document.getElementById('global-modal-body').innerHTML = message;
+                const actions = document.getElementById('global-modal-actions');
+                actions.innerHTML = `<button class="btn btn-primary" onclick="app.closeModal()">${btnText}</button>`;
+                modal.classList.add('active');
+            }
+
+            showConfirm(title, message, onConfirm, confirmText = 'Yes', cancelText = 'Cancel') {
+                const modal = document.getElementById('global-modal');
+                if (!modal) {
+                    console.error("Global modal NOT found in DOM");
+                    return confirm(message) ? onConfirm() : null;
+                }
+                document.getElementById('global-modal-title').innerText = title;
+                document.getElementById('global-modal-body').innerHTML = message;
+                const actions = document.getElementById('global-modal-actions');
+                actions.innerHTML = '';
+
+                // Cancel Button
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = 'btn btn-secondary';
+                cancelBtn.innerText = cancelText;
+                cancelBtn.onclick = () => this.closeModal();
+                actions.appendChild(cancelBtn);
+
+                // Confirm Button
+                const confirmBtn = document.createElement('button');
+                confirmBtn.className = 'btn btn-primary';
+                confirmBtn.innerText = confirmText;
+                confirmBtn.onclick = () => {
+                    this.closeModal();
+                    if (onConfirm) onConfirm();
+                };
+                actions.appendChild(confirmBtn);
+
+                modal.classList.add('active');
+            }
+
+            closeModal() {
+                const modal = document.getElementById('global-modal');
+                if (modal) modal.classList.remove('active');
+            }
+
+            exportData() {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.state));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", "12-week-year-data.json");
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            }
+
+            importData(inputElement) {
+                const file = inputElement.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (data.goals && data.metrics) {
+                            this.showConfirm(
+                                'Overwrite Data?',
+                                'This will replace your current plan with the imported file.',
+                                () => {
+                                    this.state = data;
+                                    this.save();
+                                    this.showAlert(
+                                        'Import Successful',
+                                        'Your plan has been loaded. The page will reload now.',
+                                        'Reload'
+                                    );
+                                    // Slight delay or wait for user to click button? 
+                                    // The showAlert button calls closeModal. Here we want reload.
+                                    // I'll modify showAlert to allow callback or just handle it here.
+                                    // Actually, showAlert closes modal. I want reload.
+                                    // I will hook into the button click? 
+                                    // Easier: custom actions or just override logic.
+                                    // I'll make showAlert take onClose?
+                                    // Or just:
+                                    const modal = document.getElementById('global-modal');
+                                    const actions = document.getElementById('global-modal-actions');
+                                    actions.innerHTML = `<button class="btn btn-primary" onclick="location.reload()">Reload</button>`;
+                                },
+                                'Overwrite'
+                            );
+                        } else {
+                            this.showAlert('Invalid File', 'The file is missing required data fields.');
+                        }
+                    } catch (err) {
+                        this.showAlert('Error', 'Could not parse file: ' + err);
+                    }
+                };
+                reader.readAsText(file);
+            }
+            renderHourlyPlanner() {
+                const container = document.getElementById('hourly-planner-grid');
+                if (!container) return;
+
+                const hours = 10;
+                const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
+                let html = '<div style="display:grid; grid-template-columns: 32px repeat(5, 1fr); gap:4px;">';
+
+                // Headers
+                html += '<div></div>'; // Corner
+                days.forEach(d => html += `<div class="text-center text-sm text-sub" style="font-weight:600; padding-bottom:8px;">${d}</div>`);
+
+                for (let h = 0; h < hours; h++) {
+                    const timeLabel = (8 + h) + ':00';
+                    html += `<div class="text-sub text-xs text-right" style="padding-right:8px; display:flex; align-items:center; justify-content:flex-end; height:32px;">${timeLabel}</div>`;
+
+                    for (let d = 0; d < 5; d++) {
+                        const id = `d${d}-h${h}`;
+                        const type = (this.state.modelWeek && this.state.modelWeek[id]) ? this.state.modelWeek[id] : 'empty';
+
+                        let color = '#f9f9f9'; // Default
+                        let label = '';
+                        let textColor = 'black';
+
+                        if (type === 'plan') {
+                            color = 'var(--primary-blue)';
+                            label = 'P';
+                            textColor = 'white';
+                        }
+                        if (type === 'action') {
+                            color = 'var(--primary-red)';
+                            label = 'A';
+                            textColor = 'white';
+                        }
+                        if (type === 'breakout') {
+                            color = '#F5A623'; // Real Orange
+                            label = 'B';
+                            textColor = 'white';
+                        }
+
+                        html += `
+                            <div onclick="app.toggleTimeBlock('${id}')" 
+                                 style="height:32px; background:${color}; border-radius:4px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:${textColor}; font-weight:600; font-size:0.75rem; user-select:none; transition: background 0.2s;">
+                                ${label}
+                            </div>
+                        `;
+                    }
+                }
+                html += '</div>';
+
+                // Legend
+                html += `
+                    <div style="margin-top:24px; display:flex; gap:24px; justify-content:center;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="width:16px; height:16px; background:var(--primary-blue); border-radius:4px;"></div>
+                            <span class="text-sm text-sub">Plan</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="width:16px; height:16px; background:var(--primary-red); border-radius:4px;"></div>
+                            <span class="text-sm text-sub">Action</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="width:16px; height:16px; background:#F5A623; border-radius:4px;"></div>
+                            <span class="text-sm text-sub">Breakout</span>
+                        </div>
+                    </div>
+                `;
+
+                container.innerHTML = html;
+            }
+
+            resetData() {
+                this.showConfirm(
+                    'Reset Everything?',
+                    "DANGER: This will delete ALL your goals, vision, and history. Are you sure you want to start fresh?",
+                    () => {
+                        // key correction: prevent auto-save from writing old data back during reload
+                        this.save = () => { };
+                        localStorage.removeItem('sprintpulse_data');
+                        location.reload();
+                    },
+                    'DELETE ALL',
+                    'Cancel'
+                );
+            }
+
+            switchTab(tabId) {
+                document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+                document.getElementById(`tab-${tabId}`).classList.add('active');
+
+                if (tabId === 'dashboard') this.renderDashboard();
+                if (tabId === 'plan') this.renderPlan();
+                if (tabId === 'execution') this.renderExecution();
+                if (tabId === 'resources') this.renderHourlyPlanner();
+                if (tabId === 'review') this.renderReview();
+                if (tabId === 'education') { /* Static content, no render needed */ }
+
+                const btns = document.querySelectorAll('.tab-btn');
+                btns.forEach(b => {
+                    if (b.onclick.toString().includes(tabId)) b.classList.add('active');
+                });
+            }
+        }
+
+        // Initialize App
+        let app;
+        try {
+            app = new AppStore();
+            console.log("App initialized successfully");
+        } catch (e) {
+            if (app && app.showAlert) {
+                app.showAlert("App Error", e.message + "<br><small>" + e.stack + "</small>");
+            } else {
+                alert("App Error: " + e.message + "\n" + e.stack);
+            }
+            console.error(e);
+        }
+
+        // Helper for tabs class toggling
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function () {
+                tabBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+    </script>
+    <!-- GENERIC CUSTOM MODAL (Moved to end) -->
+    <div id="global-modal" class="custom-modal-overlay">
+        <div class="custom-modal-content">
+            <h2 id="global-modal-title" class="custom-modal-title">Title</h2>
+            <div id="global-modal-body" class="custom-modal-body">Message goes here.</div>
+            <div id="global-modal-actions" class="custom-modal-actions">
+                <!-- Dynamic Buttons -->
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

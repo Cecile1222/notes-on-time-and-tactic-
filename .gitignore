@@ -1,0 +1,7 @@
+.DS_Store
+*.webp
+*.mp4
+*.webm
+*.log
+node_modules/
+.gemini/
