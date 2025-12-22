@@ -898,9 +898,15 @@ class AppStore {
     toggleTimeBlock(id) {
         if (!this.state.modelWeek) this.state.modelWeek = {};
 
-        const types = ['empty', 'strategic', 'buffer', 'breakout'];
+        // Updated types per user request: plan, action, breakout
+        const types = ['empty', 'plan', 'action', 'breakout'];
         const current = this.state.modelWeek[id] || 'empty';
-        const next = types[(types.indexOf(current) + 1) % types.length];
+        // Handle migration from old keys if necessary by defaulting unknown to empty or mapping?
+        // Simple switch: if current is old key, it resets to 'plan' (index 1).
+        let idx = types.indexOf(current);
+        if (idx === -1) idx = 0;
+
+        const next = types[(idx + 1) % types.length];
 
         this.state.modelWeek[id] = next;
         this.save();
@@ -910,8 +916,8 @@ class AppStore {
     calculateStrategicHours() {
         if (!this.state.modelWeek) return 0;
         // Each block is 1 hour? Assuming grid 5 days x hours.
-        // Count values === 'strategic'
-        return Object.values(this.state.modelWeek).filter(v => v === 'strategic').length;
+        // Count values === 'action' (formerly strategic)
+        return Object.values(this.state.modelWeek).filter(v => v === 'action').length;
     }
 
     completeWeek() {
@@ -953,34 +959,43 @@ class AppStore {
         const container = document.getElementById('hourly-planner-grid');
         if (!container) return;
 
-        // 5 Days (Mon-Fri) x 12 Hours (8am-8pm)? Or simple blocks?
-        // Let's make it 5 columns, 10 rows (8am-6pm).
-        const hours = 10;
+        // 5 Days (Mon-Fri) x 16 Hours (8am-12am)
+        const hours = 17; // 8:00 to 24:00 inclusive is 17 points or 16 blocks? User said 8:00-24:00. Let's do 16 blocks.
         const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
-        let html = '<div style="display:grid; grid-template-columns: 30px repeat(5, 1fr); gap:4px;">';
+        let html = '<div style="display:grid; grid-template-columns: 40px repeat(5, 1fr); gap:4px;">';
 
         // Headers
         html += '<div></div>'; // Corner
-        days.forEach(d => html += `<div class="text-center text-sm text-sub" style="font-weight:600;">${d}</div>`);
+        days.forEach(d => html += `<div class="text-center text-sm text-sub" style="font-weight:600; padding-bottom:8px;">${d}</div>`);
 
-        for (let h = 0; h < hours; h++) {
+        for (let h = 0; h < 16; h++) {
             const timeLabel = (8 + h) + ':00';
-            html += `<div class="text-sub text-xs text-right" style="padding-right:4px;">${timeLabel}</div>`;
+            html += `<div class="text-sub text-xs text-right" style="padding-right:8px; transform:translateY(6px);">${timeLabel}</div>`;
 
             for (let d = 0; d < 5; d++) {
                 const id = `d${d}-h${h}`;
                 const type = (this.state.modelWeek && this.state.modelWeek[id]) ? this.state.modelWeek[id] : 'empty';
                 let color = '#f5f5f5';
-                if (type === 'strategic') color = 'var(--primary-red)'; // Red for strategic
-                if (type === 'buffer') color = '#ccc'; // Grey for buffer
-                if (type === 'breakout') color = 'var(--accent-orange)'; // Orange for breakout
+                let textColor = 'black';
+
+                // Mappings: 
+                // Plan (buffer) -> Grey
+                // Action (strategic) -> Red
+                // Breakout -> Orange
+                if (type === 'plan') { color = '#ddd'; textColor = '#555'; }
+                if (type === 'action') { color = 'var(--primary-red)'; textColor = 'white'; }
+                if (type === 'breakout') { color = '#F5A623'; textColor = 'white'; }
+
+                // Handle legacy data or fallback
+                if (type === 'strategic') { color = 'var(--primary-red)'; textColor = 'white'; } // legacy
+                if (type === 'buffer') { color = '#ddd'; textColor = '#555'; } // legacy
 
                 const label = type === 'empty' ? '' : type.charAt(0).toUpperCase();
 
                 html += `
                             <div onclick="app.toggleTimeBlock('${id}')" 
-                                 style="height:30px; background:${color}; border-radius:4px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:${type === 'strategic' ? 'white' : 'black'}; font-size:0.7rem; user-select:none;">
+                                 style="height:35px; background:${color}; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:${textColor}; font-size:0.75rem; font-weight:600; user-select:none; transition: all 0.1s ease;">
                                 ${label}
                             </div>
                         `;
@@ -990,10 +1005,10 @@ class AppStore {
 
         // Legend
         html += `
-                    <div style="display:flex; gap:16px; margin-top:16px; justify-content:center;">
-                        <div style="display:flex; align-items:center; gap:4px;"><div style="width:12px; height:12px; background:var(--primary-red); border-radius:2px;"></div><span class="text-sm">Strategic</span></div>
-                        <div style="display:flex; align-items:center; gap:4px;"><div style="width:12px; height:12px; background:var(--accent-orange); border-radius:2px;"></div><span class="text-sm">Breakout</span></div>
-                        <div style="display:flex; align-items:center; gap:4px;"><div style="width:12px; height:12px; background:#ccc; border-radius:2px;"></div><span class="text-sm">Buffer</span></div>
+                    <div style="display:flex; gap:24px; margin-top:24px; justify-content:center;">
+                        <div style="display:flex; align-items:center; gap:6px;"><div style="width:16px; height:16px; background:#ddd; border-radius:4px;"></div><span class="text-sm font-medium">Plan</span></div>
+                        <div style="display:flex; align-items:center; gap:6px;"><div style="width:16px; height:16px; background:var(--primary-red); border-radius:4px;"></div><span class="text-sm font-medium">Action</span></div>
+                        <div style="display:flex; align-items:center; gap:6px;"><div style="width:16px; height:16px; background:#F5A623; border-radius:4px;"></div><span class="text-sm font-medium">Breakout</span></div>
                     </div>
                 `;
 
