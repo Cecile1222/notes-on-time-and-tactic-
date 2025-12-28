@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Knowledge Map</title>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            flowchart: { useMaxWidth: true, htmlLabels: true }
+        });
+    </script>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 2rem;
+            max-width: 100%;
+            margin: 0;
+            background-color: #fce4ec;
+            color: #4a142c;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .controls {
+            position: sticky;
+            top: 1rem;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        button {
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border: none;
+            background: #d81b60;
+            color: white;
+            border-radius: 20px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #ad1457;
+        }
+
+        .mermaid-container {
+            width: 95vw;
+            height: 70vh;
+            overflow: auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: block;
+            padding: 2rem;
+            box-sizing: border-box;
+            border: 1px solid #f8bbd0;
+            text-align: center;
+        }
+
+        /* The mermaid div itself inside the container */
+        .mermaid {
+            margin: 0 auto;
+            transition: width 0.3s ease;
+            width: 100%;
+        }
+
+        h1 {
+            color: #880e4f;
+            margin-bottom: 0.5rem;
+        }
+
+        .descriptions {
+            max-width: 1200px;
+            padding: 2rem;
+        }
+
+        .node-summary {
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 5px solid #d81b60;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        code {
+            background: #fce4ec;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Visual Knowledge Map</h1>
+
+    <div class="controls">
+        <button onclick="zoomOut()">- Zoom Out</button>
+        <button onclick="resetZoom()">Reset</button>
+        <button onclick="zoomIn()">+ Zoom In</button>
+    </div>
+
+    <div class="mermaid-container">
+        <div class="mermaid" id="diagram">
+            flowchart TD
+            subgraph "Dominant Cinema & Its Problems"
+            N1["The Male Gaze (Mulveyan Paradigm)"]
+            N2["Dilemma of the Female Spectator"]
+            N4["Woman as Sign (Structuralist View)"]
+            N5["Fetishism (Marxist & Freudian)"]
+            N16["The Binary Machine (Critique of Theory)"]
+            end
+
+            subgraph "Strategies of Resistance & Counter-Cinema"
+            N3["Counter-Cinema Strategies"]
+            N6["The Oppositional Gaze (Black Female Spectatorship)"]
+            N8["Masquerade as Subversive Performance"]
+            N10["Ostranenie (Making Strange)"]
+            N11["New Cinematic Syntax"]
+            N13["Feminist Curiosity (The Investigator)"]
+            end
+
+            subgraph "Alternative Frameworks & Applications"
+            N7["Critique of Mainstream Feminist Film Theory"]
+            N9["The Ambivalent Gaze (Valentino Phenomenon)"]
+            N12["Pandora's Box (Topography of Femininity)"]
+            N14["Co-Evolution of Cinema & Warfare"]
+            N15["Technosexuality & Xenosexuality"]
+            N17["Experimental Ethnography"]
+            N18["Trauma Cinema"]
+            N19["The Politics of Difference (Parmar)"]
+            N20["Speaking Nearby (Trinh T. Minh-ha)"]
+            end
+
+            %% Core Relationships
+            N1 -->|BUILD_ON| N2
+            N1 -->|BUILD_ON| N4
+            N1 -->|BUILD_ON| N5
+            N16 x-- CONTRADICT --x N1
+
+            %% Resistance to the Dominant Model
+            N1 x-- CONTRADICT --x N6
+            N1 x-- CONTRADICT --x N8
+            N2 <-->|ALT_PERSPECTIVE| N6
+                N2 <-->|ALT_PERSPECTIVE| N8
+                    N2 -->|BUILD_ON| N3
+
+                    %% Counter-Cinema Methods
+                    N3 -->|BUILD_ON| N10
+                    N3 -->|BUILD_ON| N11
+                    N20 <-->|ALT_PERSPECTIVE| N3
+
+                        %% Theoretical Critiques & Expansions
+                        N7 -->|BUILD_ON| N6
+                        N7 <-->|ALT_PERSPECTIVE| N19
+                            N16 -->|BUILD_ON| N7
+
+                            %% Inter-Framework Connections
+                            N1 <-->|ALT_PERSPECTIVE| N9
+                                N1 <-->|ALT_PERSPECTIVE| N14
+                                    N17 x-- CONTRADICT --x N1
+                                    N5 -->|BUILD_ON| N12
+                                    N12 -->|BUILD_ON| N15
+                                    N1 -->|BUILD_ON| N15
+                                    N13 -->|BUILD_ON| N12
+                                    N6 -->|BUILD_ON| N13
+                                    N18 <-->|ALT_PERSPECTIVE| N13
+        </div>
+    </div>
+
+    <script>
+        let currentWidth = 100;
+        const mermaidDiv = document.getElementById('diagram');
+
+        function zoomIn() {
+            currentWidth += 20;
+            applyWidth();
+        }
+
+        function zoomOut() {
+            if (currentWidth > 20) {
+                currentWidth -= 20;
+                applyWidth();
+            }
+        }
+
+        function resetZoom() {
+            currentWidth = 100;
+            applyWidth();
+        }
+
+        function applyWidth() {
+            mermaidDiv.style.width = `${currentWidth}%`;
+        }
+    </script>
+
+    <div class="descriptions">
+        <h2>2. NODAL ARGUMENT SUMMARIES</h2>
+        <div class="node-summary">
+            <h3>N1: The Male Gaze (Mulveyan Paradigm)</h3>
+            <p>The Male Gaze is a foundational concept in feminist film theory, arguing that the cinematic apparatus of
+                dominant cinema is structured by and for a male spectator. This gaze operates through three aligned
+                looks: that of the camera, the male characters within the narrative, and the spectator in the audience.
+                Its primary psychological mechanisms are voyeurism (the sadistic pleasure of looking at and controlling
+                an objectified other) and fetishism (the erotic overvaluation of the female form to mitigate male
+                castration anxiety). This framework positions woman as a passive spectacle or image, an object of desire
+                whose primary function is to be looked at. Her presence often halts the narrative for moments of erotic
+                contemplation, disrupting the story's flow. This structure is not accidental but is rooted in the
+                psychoanalytic underpinnings of a patriarchal society, where woman is constructed as "non-male" and a
+                signifier within the male unconscious. Consequently, the simple act of filming a woman is considered a
+                "terrorist act," as it inevitably inscribes her within this oppressive visual economy. The entire system
+                is designed to reinforce a phallocentric order, making women "absent as women" from both the screen and
+                the audience.</p>
+            <p><strong>File Contributors:</strong> <code>Is the Gaze Male?.md</code>,
+                <code>Pleasure, Ambivalence, Identification_ Valentino and Female Spectatorship.md</code>,
+                <code>Gendered AI in Her.md</code>, <code>The Difficulty of Difference.md</code>,
+                <code>Woman’s Stake_ Filming the Female Body.md</code>, <code>Filming Woman</code></p>
+        </div>
+    </div>
+</body>
+
+</html>

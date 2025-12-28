@@ -166,8 +166,11 @@ class AppStore {
         let completed = 0;
         this.state.goals.forEach(g => {
             g.tactics.forEach(t => {
-                total++;
-                if (t.completed) completed++;
+                // Filter by current week
+                if ((t.week || 1) == this.state.currentWeek) {
+                    total++;
+                    if (t.completed) completed++;
+                }
             });
         });
         return total === 0 ? 0 : Math.round((completed / total) * 100);
@@ -990,11 +993,11 @@ class AppStore {
         const container = document.getElementById('hourly-planner-grid');
         if (!container) return;
 
-        // 5 Days (Mon-Fri) x 16 Hours (8am-12am)
-        const hours = 17; // 8:00 to 24:00 inclusive is 17 points or 16 blocks? User said 8:00-24:00. Let's do 16 blocks.
-        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+        // 7 Days (Mon-Sun) x 16 Hours (8am-12am)
+        const hours = 17;
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-        let html = '<div style="display:grid; grid-template-columns: 40px repeat(5, 1fr); gap:4px;">';
+        let html = '<div style="display:grid; grid-template-columns: 40px repeat(7, 1fr); gap:4px;">';
 
         // Headers
         html += '<div></div>'; // Corner
@@ -1004,7 +1007,7 @@ class AppStore {
             const timeLabel = (8 + h) + ':00';
             html += `<div class="text-sub text-xs text-right" style="padding-right:8px; transform:translateY(6px);">${timeLabel}</div>`;
 
-            for (let d = 0; d < 5; d++) {
+            for (let d = 0; d < 7; d++) {
                 const id = `d${d}-h${h}`;
                 const type = (this.state.modelWeek && this.state.modelWeek[id]) ? this.state.modelWeek[id] : 'empty';
                 let color = '#f5f5f5';
