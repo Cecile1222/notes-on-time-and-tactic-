@@ -966,6 +966,9 @@ class AppStore {
                     this.state.metrics.wesHistory.push(entry);
                 }
 
+                // Clear Hourly Plan for the new week
+                this.state.modelWeek = {};
+
                 this.save();
 
                 // 2. Increment Week
